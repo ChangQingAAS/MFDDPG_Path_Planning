@@ -1,0 +1,3 @@
+before_algo, there are 0 agents have hit obstacles
+
+
