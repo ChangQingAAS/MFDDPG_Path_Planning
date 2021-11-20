@@ -1,19 +1,20 @@
 from math import sqrt
+import matplotlib.pyplot as plt
+import numpy as np
+import copy
+import random
+
 from kmeans_plus_plus import get_all
+from RRT import get_action_by_RTT
 from utils import *
 from draw import *
 from etc import *
-import matplotlib.pyplot as plt
-import copy
-import random
-from RRT import get_action_by_RTT
+from pic import write_loss
+from file_utils import file
 
 # 调用算法：MFAC
 from mfac import buffer
 from mfac import train
-import numpy as np
-from pic import write_loss
-from file_utils import file
 
 
 # 执行该动作是否会碰到障碍物
@@ -41,8 +42,6 @@ def get_obstacles_within_observation(agent, CenterAgent):
 def get_action_from_all_clusters(agent, CenterAgents, action_from_algo):
     action_from_others_cluster = [0, 0]
 
-    action_from_others_cluster[0] = 0
-    action_from_others_cluster[1] = 0
     for item in CenterAgents:
         action_from_others_cluster[0] += item.average_action[0] / len(
             CenterAgents)
@@ -63,12 +62,20 @@ def get_action_from_all_clusters(agent, CenterAgents, action_from_algo):
     return action
 
 
-# TODO：还需加入有关障碍的部分
 def get_reward(agent):
     reward = 0
-    reward = 100 / sqrt(
+    obstacle_reward = 0
+    # 接近目标的奖励
+    distance_reward = 100 / sqrt(
         pow((agent.x - target[0]), 2) + pow((agent.y - target[1]), 2))
 
+    # 障碍物的惩罚
+    for item in CenterAgents[agent.group_id].obstacle_set:
+        if int(agent.x) - 1 <= item.x <= int(agent.x) + 1 and int(
+                agent.y) - 1 <= item.y <= int(agent.y) + 1:
+            obstacle_reward += -50
+
+    reward = distance_reward + obstacle_reward
     return reward
 
 
@@ -80,13 +87,14 @@ def get_action_from_drl_algo(trainer, x, y):
     # 1/3的动作随机生成，2/3的动作由模型生成
     number = random.randint(1, 3)
     if number % 3 == 0:
-        action = trainer.get_exploration_action(state)  # 通过模型来生成动作，利用，
+        action = trainer.get_exploration_action(state)  # 通过模型来生成动作，利用
     else:
         action = trainer.get_exploitation_action(state)  # 随机生成动作。
-    action_x = action[0]
-    action_y = action[1]
-    print("action from mfac is ",[action_x,action_y])
-    return [action_x, action_y]
+    with open("./output/action.txt", "a+") as f:
+        f.write("action from mfac is [%f,%f]" % (action[0],action[1]))
+        f.write("\n")
+    # print("action from mfac is ", action)
+    return action
 
 
 # todo: 这里的mean_action的获取
@@ -107,10 +115,10 @@ def train_(trainer, ram, train_step, state_last, action_last, reward_now,
 
 def get_mean_action_from_neigh(agents, id):
     mean_action = [0, 0]
+    count = 1
     if id < num_agents:
         mean_action[0] = agents[id].action[0]
         mean_action[1] = agents[id].action[1]
-        count = 1
     else:
         return mean_action
 
@@ -154,7 +162,7 @@ train_step = 0  # 当前决策步数
 agents, CenterAgents, obstacles = get_all()
 # show(agents, CenterAgents, obstacles, "./picture/init.png")
 
-# 保存初始化的环境,以便于进行reset
+# 保存初始化的环境,以便于进行对环境reset
 first_agents = []
 for item in agents:
     first_agents.append(copy.copy(item))
@@ -165,7 +173,7 @@ for item in CenterAgents:
 # 判断在运行算法之前，死掉了多少个智能体
 before_dead = 0
 for agent in agents:
-    # 碰到障碍物：
+    # 碰到障碍物
     for obstacle in obstacles:
         if int(agent.x) - 0.2 <= obstacle.x <= int(agent.x) + 0.2 and int(
                 agent.y) - 0.2 <= obstacle.y <= int(agent.y) + 0.2:
@@ -174,7 +182,7 @@ for agent in agents:
             before_dead += 1
             agent.moving = False
 # 把死多少个agent放入info中
-with open("./result.txt", "w") as f:
+with open("./output/result.txt", "w") as f:
     f.write("before_algo, there are %s agents have hit obstacles" %
             before_dead)
     f.write("\n")
@@ -229,7 +237,7 @@ for epoch in range(num_epochs):
                         action = get_action_by_RTT(
                             agent, target,
                             CenterAgents[agent.group_id].obstacle_set)
-                        # with open('./result.txt', 'a+') as f:
+                        # with open('./output/result.txt', 'a+') as f:
                         #     f.write( "agent_id_%s get action [%s, %s] from RRT\n" %(agent.id, action[0], action[1]))
                         agent.take_action(action)
                     else:
@@ -283,7 +291,7 @@ for epoch in range(num_epochs):
                     if (random_number < eta):
                         action = get_action_by_RTT(centerAgent, target,
                                                    centerAgent.obstacle_set)
-                        # with open('./result.txt', 'a+') as f:
+                        # with open('./output/result.txt', 'a+') as f:
                         #     f.write( "centerAgent_id_%s get action [%s, %s] from RRT\n" % (centerAgent.id, action[0], action[1]))
                         centerAgent.take_action(action)
                     else:
@@ -342,7 +350,7 @@ for epoch in range(num_epochs):
     # pic_name = "./pic/epoch_" + str(epoch) + ".png"
     # show(agents, CenterAgents, obstacles, pic_name)
 
-    with open('./result.txt', 'a+') as f:
+    with open('./output/result.txt', 'a+') as f:
         f.write("Epoch: %s\n" % epoch)
         f.write("     num_reach_target: %s\n" % num_reach_target)
         f.write("     num_hit_obs: %s\n" % num_hit_obs)

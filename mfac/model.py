@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-EPS = 0.003
+from .config import *
 
 
 # 扇入变量初始化，可用于初始化权重参数
@@ -18,7 +18,7 @@ class Critic(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(Critic, self).__init__()
         self.state_dim = state_dim
-        self.action_dim = action_dim  # 这里是否应该改为平均动作
+        self.action_dim = action_dim
 
         self.fcs1 = nn.Linear(state_dim, 256)
         self.fcs1.weight.data = fanin_init(self.fcs1.weight.data.size())

@@ -1,20 +1,14 @@
 from __future__ import division
 
 import datetime
-import math
-import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
-from . import utils
+from . import update
 from . import model
-
-BATCH_SIZE = 20  # 注意不同batch_size的意思
-LEARNING_RATE = 0.001  # 训练学习率
-GAMMA = 0.99  # 奖励随时间步的衰减因子
-TAU = 0.001  # model参数软更新系数
+from .config import *
+from . import OUnoise
 
 
 class Trainer:
@@ -32,8 +26,7 @@ class Trainer:
         self.action_dim = action_dim
         self.action_lim = action_lim
         self.ram = ram
-        self.iter = 0
-        self.noise = utils.OrnsteinUhlenbeckActionNoise(self.action_dim)
+        self.noise = OUnoise.OrnsteinUhlenbeckActionNoise(self.action_dim)
         self.device = dev
         self.write_loss = write_loss
 
@@ -58,11 +51,9 @@ class Trainer:
             print("load models")
             self.load_models(epoch, model_save_path)
 
-        # 用在线网络更新目标网络，
-        utils.hard_update(self.target_actor, self.actor)
-        utils.hard_update(
-            self.target_critic,
-            self.critic)  # 貌似和load_Models里重复了。（许怀阳，2020.05.05 17:13）
+        # 用在线网络更新目标网络
+        update.hard_update(self.target_actor, self.actor)
+        update.hard_update(self.target_critic, self.critic)
 
     def get_exploitation_action(self, state):
         '''利用模型产生动作'''
@@ -103,7 +94,7 @@ class Trainer:
         if self.write_loss:
             self.write_loss(step, loss_critic.item(),
                             "loss_critic")  # 将损失值保存到文件中
-        loss_critic.backward()  # 反向传播，
+        loss_critic.backward()  # 反向传播
         self.critic_optimizer.step()  # 修改价值网络参数
 
         pred_a1 = self.actor.forward(s1)
@@ -116,11 +107,11 @@ class Trainer:
         loss_actor.backward()  # 反向传播
         self.actor_optimizer.step()  # 修改策略网络参数
 
-        utils.soft_update(self.target_actor, self.actor, TAU)
-        utils.soft_update(self.target_critic, self.critic, TAU)
+        update.soft_update(self.target_actor, self.actor, TAU)
+        update.soft_update(self.target_critic, self.critic, TAU)
 
     def get_models_path(self):
-        return "./"
+        return "./Models/"
 
     def save_model(self, episode_count, model_save_path=None):
         '''保存模型'''
@@ -133,7 +124,7 @@ class Trainer:
                    model_save_path + str(episode_count) + '_critic.pt')
         print("%s：%s Models saved successfully" %
               (datetime.datetime.now(), episode_count))
-        # print("%s：轮数:%s 决策步数:%s  Reward:%.2f" % (datetime.now(), _ep, step, reward_now))
+        # print("%s：轮数:%s 决策步数:%s  Reward:%.2f" %  (datetime.now(), episode_count, step, reward_now))
 
     def load_models(self, episode, model_save_path=None):
         '''载入以前训练过的模型, 包括策略网络和价值网络'''
@@ -145,6 +136,6 @@ class Trainer:
         # self.actor.load_state_dict(torch.load(self.get_models_path() + str(episode) + '_actor.pt'))
         self.actor.load_state_dict(
             torch.load(model_save_path + str(episode) + '_actor.pt'))
-        utils.hard_update(self.target_actor, self.actor)
-        utils.hard_update(self.target_critic, self.critic)
+        update.hard_update(self.target_actor, self.actor)
+        update.hard_update(self.target_critic, self.critic)
         print("Models loaded successfully")

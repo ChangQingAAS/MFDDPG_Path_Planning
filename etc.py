@@ -11,14 +11,13 @@ target = (360, 360)  # 目标位置
 
 num_epochs = 101  # 一共训练多少回合
 max_step = 2001  # 每回合一共做多少次决策
-MAX_BUFFER = 10000  # buffer size
+MAX_BUFFER = 100000  # buffer size
 
 eta = 0.5
 beta = 0.2
 alpha = 0.8
 
-# USE_CUDA = torch.cuda.is_available()
-USE_CUDA = False
+USE_CUDA = torch.cuda.is_available()
 device = torch.device("cuda" if USE_CUDA else "cpu")
 
 # 路径定义
