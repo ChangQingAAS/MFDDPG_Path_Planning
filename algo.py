@@ -12,9 +12,9 @@ from etc import *
 from pic import write_loss
 from file_utils import file
 
-# 调用算法：MFAC
-from mfac import buffer
-from mfac import train
+# 调用算法：MFDDPG
+from mfddpg import buffer
+from mfddpg import train
 
 
 # 执行该动作是否会碰到障碍物
@@ -62,20 +62,25 @@ def get_action_from_all_clusters(agent, CenterAgents, action_from_algo):
     return action
 
 
-def get_reward(agent):
+def get_reward(centerAgent):
     reward = 0
     obstacle_reward = 0
+    live_reward = 0
     # 接近目标的奖励
-    distance_reward = 100 / sqrt(
-        pow((agent.x - target[0]), 2) + pow((agent.y - target[1]), 2))
+    distance_reward = 10000 / sqrt(
+        pow((centerAgent.x - target[0]), 2) +
+        pow((centerAgent.y - target[1]), 2))
 
     # 障碍物的惩罚
-    for item in CenterAgents[agent.group_id].obstacle_set:
-        if int(agent.x) - 1 <= item.x <= int(agent.x) + 1 and int(
-                agent.y) - 1 <= item.y <= int(agent.y) + 1:
+    for item in centerAgent.obstacle_set:
+        if int(centerAgent.x) - 1 <= item.x <= int(centerAgent.x) + 1 and int(
+                centerAgent.y) - 1 <= item.y <= int(centerAgent.y) + 1:
             obstacle_reward += -50
 
-    reward = distance_reward + obstacle_reward
+    if centerAgent.moving == False:
+        live_reward = -2000
+
+    reward = distance_reward + obstacle_reward + live_reward
     return reward
 
 
@@ -91,9 +96,9 @@ def get_action_from_drl_algo(trainer, x, y):
     else:
         action = trainer.get_exploitation_action(state)  # 随机生成动作。
     with open("./output/action.txt", "a+") as f:
-        f.write("action from mfac is [%f,%f]" % (action[0],action[1]))
+        f.write("action from mfddpg is [%f,%f]" % (action[0], action[1]))
         f.write("\n")
-    # print("action from mfac is ", action)
+    # print("action from mfddpg is ", action)
     return action
 
 
@@ -113,28 +118,27 @@ def train_(trainer, ram, train_step, state_last, action_last, reward_now,
     return True
 
 
-def get_mean_action_from_neigh(agents, id):
-    mean_action = [0, 0]
-    count = 1
-    if id < num_agents:
-        mean_action[0] = agents[id].action[0]
-        mean_action[1] = agents[id].action[1]
-    else:
-        return mean_action
+# def get_mean_action_from_neigh(agents, id):
+#     mean_action = [0, 0]
+#     count = 1
+#     if id < num_agents:
+#         mean_action[0] = agents[id].action[0]
+#         mean_action[1] = agents[id].action[1]
+#     else:
+#         return mean_action
 
-    for i in range(num_neighbor):
-        id += 1
-        if id < num_agents:
-            mean_action[0] = agents[id].action[0]
-            mean_action[1] = agents[id].action[1]
-            count += 1
-        else:
-            break
+#     for i in range(num_neighbor):
+#         id += 1
+#         if id < num_agents:
+#             mean_action[0] = agents[id].action[0]
+#             mean_action[1] = agents[id].action[1]
+#             count += 1
+#         else:
+#             break
 
-    mean_action[0] /= count
-    mean_action[1] /= count
-    return mean_action
-
+#     mean_action[0] /= count
+#     mean_action[1] /= count
+#     return mean_action
 
 # 创建输出文件类，并进行文件初始化
 out_file = file()
@@ -146,9 +150,9 @@ ram = buffer.MemoryBuffer(MAX_BUFFER)
 # 初始化训练model
 trainer = train.Trainer(
     state_space_dim,  # 状态空间维度： x,y
-    # 这个参量在这里只有定义没有使用，是为了传给mfac的trainer加OU噪声，防止过拟合
+    # 这个参量在这里只有定义没有使用，是为了传给mfddpg的trainer加OU噪声，防止过拟合
     action_space_dim,
-    # 在mfac里的actor，由动作空间大小算出来的OU噪声乘以action_max(在实际应用中，是为了对action进行缩放)
+    # 在mfddpg里的actor，由动作空间大小算出来的OU噪声乘以action_max(在实际应用中，是为了对action进行缩放)
     action_max,
     ram,
     device,
@@ -220,17 +224,7 @@ for epoch in range(num_epochs):
                     trainer, agent.x, agent.y)
                 if not is_hit_obstacle(agent, action_from_algo):
                     action = action_from_algo
-                    state_last = [agent.x, agent.y]
-                    action_last = action
-                    reward_now = get_reward(agent)
                     agent.take_action(action)
-                    state_new = [agent.x, agent.y]
-                    mean_action = get_mean_action_from_neigh(agents, agent.id)
-                    train_(trainer, ram, train_step,
-                           np.float32(state_last), action_last, reward_now,
-                           np.float32(state_new), step, mean_action)
-                    out_file.write_step(step)
-
                 else:
                     random_number = random.uniform(0, 1)
                     if (random_number <= eta):
@@ -267,7 +261,9 @@ for epoch in range(num_epochs):
                     agent.moving = False
 
                 # 超出界限
-                if abs(int(agent.x)) > radius or abs(int(agent.y)) > radius:
+                if abs(int(agent.x)) > radius or abs(int(
+                        agent.y)) > radius or int(agent.x) < 0 or int(
+                            agent.y) < 0:
                     # print("agent %s stop because out of boundary"%agent.id)
                     num_out_of_range += 1
                     agent.moving = False
@@ -282,10 +278,20 @@ for epoch in range(num_epochs):
 
         for centerAgent in CenterAgents:
             if centerAgent.moving:
-                action_from_algo = centerAgent.get_action_from_drl_algo()
+                action_from_algo = get_action_from_drl_algo(
+                    trainer, centerAgent.x, centerAgent.y)
                 if not is_hit_obstacle(centerAgent, action_from_algo):
                     action = action_from_algo
+                    state_last = [centerAgent.x, centerAgent.y]
+                    action_last = action
                     centerAgent.take_action(action)
+                    reward_now = get_reward(centerAgent)
+                    state_new = [centerAgent.x, centerAgent.y]
+                    mean_action = centerAgent.average_action
+                    train_(trainer, ram, train_step,
+                           np.float32(state_last), action_last, reward_now,
+                           np.float32(state_new), step, mean_action)
+                    out_file.write_step(step)
                 else:
                     random_number = random.uniform(0, 1)
                     if (random_number < eta):
@@ -312,7 +318,8 @@ for epoch in range(num_epochs):
 
                 # 超出界限
                 if abs(int(centerAgent.x)) > radius or abs(int(
-                        centerAgent.y)) > radius:
+                        centerAgent.y)) > radius or int(
+                            centerAgent.x) < 0 or int(centerAgent.y) < 0:
                     # print("agent %s stop because out of boundary"%agent.id)
                     num_out_of_range += 1
                     centerAgent.moving = False

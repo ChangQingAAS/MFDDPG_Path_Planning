@@ -34,12 +34,3 @@ class CenterAgent(Agent):
         action_y = random.uniform(-1, 1)
         self.action = [action_x, action_y]
         return self.action
-
-    # 模拟深度强化学习算法，这里是用指向目标点的方向
-    def get_action_from_drl_algo(self):
-        dx = target[0] - self.x
-        dy = target[1] - self.y
-        l = math.sqrt(dx * dx + dy * dy)
-        action_x = dx / l * random.random()
-        action_y = dy / l * random.random()
-        return [action_x, action_y]

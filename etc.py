@@ -22,9 +22,9 @@ device = torch.device("cuda" if USE_CUDA else "cpu")
 
 # 路径定义
 app_abspath = os.path.dirname(__file__)
-TMP_PATH = "%s/tmp" % (app_abspath)
-OUTPUT_PATH = "%s/output" % (app_abspath)  # 多了一层目录
-MODELS_PATH = "%s/Models/" % OUTPUT_PATH  # 模型输出路径
+TMP_PATH = "%s\\tmp" % (app_abspath)
+OUTPUT_PATH = "%s\\output" % (app_abspath)  # 多了一层目录
+MODELS_PATH = "%s\\Models\\" % OUTPUT_PATH  # 模型输出路径
 
 # 状态空间维度: x,y
 state_space_dim = 2
