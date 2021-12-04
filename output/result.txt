@@ -1,24 +1,2 @@
 before_algo, there are 0 agents have hit obstacles
 
-
-Epoch: 0
-     num_reach_target: 0
-     num_hit_obs: 0
-     num_out_of_range: 106
-     num_is_moving: 0
-
-
-Epoch: 1
-     num_reach_target: 2
-     num_hit_obs: 0
-     num_out_of_range: 104
-     num_is_moving: 0
-
-
-Epoch: 2
-     num_reach_target: 2
-     num_hit_obs: 0
-     num_out_of_range: 104
-     num_is_moving: 0
-
-

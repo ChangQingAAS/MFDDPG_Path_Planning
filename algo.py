@@ -21,20 +21,21 @@ from mfddpg import train
 def is_hit_obstacle(agent, action):
     next_x = agent.x + action[0]
     next_y = agent.y + action[1]
-    # 这里的0.2也是超参
     for item in CenterAgents[agent.group_id].obstacle_set:
-        if int(next_x) - 0.2 <= item.x <= int(next_x) + 0.2 and int(
-                next_y) - 0.2 <= item.y <= int(next_y) + 0.2:
+        if int(next_x) - distance_to_obs <= item.x <= int(
+                next_x) + distance_to_obs and int(
+                    next_y) - distance_to_obs <= item.y <= int(
+                        next_y) + distance_to_obs:
             return True
 
     return False
 
 
 def get_obstacles_within_observation(agent, CenterAgent):
-    # 超参： agent 观察视野半径是5
     for obstacle in obstacles:
-        if (int(agent.x) - 5 <= obstacle.x <= int(agent.x) + 5) and (
-                int(agent.y) - 5 <= obstacle.y <= int(agent.y) + 5):
+        # 局部感知： 智能体只能看到部分
+        if obstacle.x <= int(agent.x) + view_agent and obstacle.y <= int(
+                agent.y) + view_agent:
             # print("info: \n        agent_%s find obstacle_%s " % (agent.id, obstacle.id))
             CenterAgent.obstacle_set.add(obstacle)
 
@@ -47,6 +48,7 @@ def get_action_from_all_clusters(agent, CenterAgents, action_from_algo):
             CenterAgents)
         action_from_others_cluster[1] += item.average_action[1] / len(
             CenterAgents)
+    # 现加全部的，再把自己的减去
     action_from_others_cluster[0] -= CenterAgents[
         agent.group_id].average_action[0] / len(CenterAgents)
     action_from_others_cluster[1] -= CenterAgents[
@@ -67,7 +69,7 @@ def get_reward(centerAgent):
     obstacle_reward = 0
     live_reward = 0
     # 接近目标的奖励
-    distance_reward = 10000 / sqrt(
+    distance_reward = -sqrt(
         pow((centerAgent.x - target[0]), 2) +
         pow((centerAgent.y - target[1]), 2))
 
@@ -75,10 +77,10 @@ def get_reward(centerAgent):
     for item in centerAgent.obstacle_set:
         if int(centerAgent.x) - 1 <= item.x <= int(centerAgent.x) + 1 and int(
                 centerAgent.y) - 1 <= item.y <= int(centerAgent.y) + 1:
-            obstacle_reward += -50
+            obstacle_reward += obstacle_penalty
 
     if centerAgent.moving == False:
-        live_reward = -2000
+        live_reward = dead_penalty
 
     reward = distance_reward + obstacle_reward + live_reward
     return reward
@@ -89,9 +91,10 @@ def get_action_from_drl_algo(trainer, x, y):
     state = [x, y]
     state = np.float32(state)  # 强制转化为浮点类型
 
-    # 1/3的动作随机生成，2/3的动作由模型生成
-    number = random.randint(1, 3)
-    if number % 3 == 0:
+    # 1/epilson的动作随机生成，其他的动作由模型生成
+    temp = 1 / epilson
+    number = random.randint(1, temp)
+    if number % temp == 0:
         action = trainer.get_exploration_action(state)  # 通过模型来生成动作，利用
     else:
         action = trainer.get_exploitation_action(state)  # 随机生成动作。
@@ -102,20 +105,13 @@ def get_action_from_drl_algo(trainer, x, y):
     return action
 
 
-# todo: 这里的mean_action的获取
+# 根据动作执行结果，训练一次智能体
 def train_(trainer, ram, train_step, state_last, action_last, reward_now,
            state_new, cur_step, mean_action):
-    """
-    功能说明：根据动作执行结果，训练一次智能体
-    参数：state_now:当前状态空间 reward_now:当前的回报值
-    """
     # 添加最新经验，并优化训练一把，再做决策
     ram.add(state_last, action_last, reward_now, state_new, mean_action)
     trainer.optimize(cur_step)
     train_step += 1
-
-    # 返回动作
-    return True
 
 
 # def get_mean_action_from_neigh(agents, id):
@@ -143,6 +139,7 @@ def train_(trainer, ram, train_step, state_last, action_last, reward_now,
 # 创建输出文件类，并进行文件初始化
 out_file = file()
 start_epoch, start_step, current_step = out_file.initialize()
+print("start epoch: %s" % start_epoch)
 print("start step: %s" % current_step)
 
 # 初始化重放缓冲区
@@ -158,13 +155,15 @@ trainer = train.Trainer(
     device,
     # None, 把loss写入文件的函数
     write_loss,
-    int(start_epoch),
+    start_epoch,
     MODELS_PATH)
-train_step = 0  # 当前决策步数
+
+# 当前决策步数
+train_step = 0
 
 # 初始化实体
 agents, CenterAgents, obstacles = get_all()
-# show(agents, CenterAgents, obstacles, "./picture/init.png")
+show(agents, CenterAgents, obstacles, "./picture/init.png")
 
 # 保存初始化的环境,以便于进行对环境reset
 first_agents = []
@@ -179,24 +178,25 @@ before_dead = 0
 for agent in agents:
     # 碰到障碍物
     for obstacle in obstacles:
-        if int(agent.x) - 0.2 <= obstacle.x <= int(agent.x) + 0.2 and int(
-                agent.y) - 0.2 <= obstacle.y <= int(agent.y) + 0.2:
+        if int(agent.x) - distance_to_obs <= obstacle.x <= int(
+                agent.x) + distance_to_obs and int(
+                    agent.y) - distance_to_obs <= obstacle.y <= int(
+                        agent.y) + distance_to_obs:
             print("before algo:\n")
             print("     agent %s stop because hit an obstacle" % agent.id)
             before_dead += 1
             agent.moving = False
-# 把死多少个agent放入info中
+# 把agent死亡数目放入info中
 with open("./output/result.txt", "w") as f:
     f.write("before_algo, there are %s agents have hit obstacles" %
             before_dead)
-    f.write("\n")
     f.write("\n")
     f.write("\n")
 
 # 画图
 fig, ax = plt.subplots()
 
-# algo
+# algorithm
 for epoch in range(num_epochs):
 
     # init: copy from first
@@ -213,39 +213,39 @@ for epoch in range(num_epochs):
 
     for step in range(start_epoch, max_step):
 
-        # 画图
+        # 每一百步数，画图
         if step % 100 == 0:
             title = "epoch: " + str(epoch) + " step: " + str(step)
             draw_gif(ax, agents, CenterAgents, obstacles, title)
 
         for agent in agents:
             if agent.moving:
-                action_from_algo = get_action_from_drl_algo(
-                    trainer, agent.x, agent.y)
-                if not is_hit_obstacle(agent, action_from_algo):
-                    action = action_from_algo
+                # action_from_algo = get_action_from_drl_algo(
+                #     trainer, agent.x, agent.y)
+                # if not is_hit_obstacle(agent, action_from_algo):
+                #     action = action_from_algo
+                #     agent.take_action(action)
+                # else:
+                random_number = random.uniform(0, 1)
+                if (random_number <= eta):
+                    action = get_action_by_RTT(
+                        agent, target,
+                        CenterAgents[agent.group_id].obstacle_set)
+                    # with open('./output/result.txt', 'a+') as f:
+                    #     f.write( "agent_id_%s get action [%s, %s] from RRT\n" %(agent.id, action[0], action[1]))
                     agent.take_action(action)
                 else:
-                    random_number = random.uniform(0, 1)
-                    if (random_number <= eta):
-                        action = get_action_by_RTT(
-                            agent, target,
-                            CenterAgents[agent.group_id].obstacle_set)
-                        # with open('./output/result.txt', 'a+') as f:
-                        #     f.write( "agent_id_%s get action [%s, %s] from RRT\n" %(agent.id, action[0], action[1]))
-                        agent.take_action(action)
-                    else:
-                        action = get_action_from_all_clusters(
-                            agent, CenterAgents, action_from_algo)
-                        agent.take_action(action)
+                    action = get_action_from_all_clusters(
+                        agent, CenterAgents, action_from_algo)
+                    agent.take_action(action)
 
                 # 增量求cluster平均动作
                 CenterAgents[agent.group_id].average_action_num += 1
-                CenterAgents[agent.group_id].average_action[0] -= (
-                    action[0] + CenterAgents[agent.group_id].average_action[0]
+                CenterAgents[agent.group_id].average_action[0] += (
+                    action[0] - CenterAgents[agent.group_id].average_action[0]
                 ) / CenterAgents[agent.group_id].average_action_num
-                CenterAgents[agent.group_id].average_action[1] -= (
-                    action[1] + CenterAgents[agent.group_id].average_action[1]
+                CenterAgents[agent.group_id].average_action[1] += (
+                    action[1] - CenterAgents[agent.group_id].average_action[1]
                 ) / CenterAgents[agent.group_id].average_action_num
 
                 # 观察障碍物，存入center_agent
@@ -253,25 +253,23 @@ for epoch in range(num_epochs):
                                                  CenterAgents[agent.group_id])
 
                 # 到达目标
-                if target[0] - 2 <= int(
-                        agent.x) <= target[0] and target[1] - 2 <= int(
-                            agent.y) <= target[1]:
+                if agent.x in range(target[0] - distance_to_target, target[0] +
+                                    distance_to_target) and agent.y in range(
+                                        target[1] - distance_to_target,
+                                        target[1] + distance_to_target):
                     # print("agent %s stop because Reach target" %agent.id)
                     num_reach_target += 1
                     agent.moving = False
 
                 # 超出界限
-                if abs(int(agent.x)) > radius or abs(int(
-                        agent.y)) > radius or int(agent.x) < 0 or int(
-                            agent.y) < 0:
+                if abs(int(agent.x)) > radius or abs(int(agent.y)) > radius:
                     # print("agent %s stop because out of boundary"%agent.id)
                     num_out_of_range += 1
                     agent.moving = False
 
                 # 碰到障碍物
                 for obstacle in obstacles:
-                    if (obstacle.x - 0.2 <= agent.x <= obstacle.x + 0.2) and (
-                            obstacle.y - 0.2 <= agent.y <= obstacle.y + 0.2):
+                    if agent.x <= obstacle.x + distance_to_obs and agent.y <= obstacle.y + distance_to_obs:
                         # print("agent %s stop because hit an obstacle" % agent.id)
                         num_hit_obs += 1
                         agent.moving = False
@@ -309,26 +307,25 @@ for epoch in range(num_epochs):
                 get_obstacles_within_observation(centerAgent,
                                                  CenterAgents[agent.group_id])
                 # 到达目标
-                if target[0] - 2 <= int(
-                        centerAgent.x) <= target[0] and target[1] - 2 <= int(
-                            centerAgent.y) <= target[1]:
+                if target[0] - distance_to_target <= int(
+                        centerAgent.x
+                ) <= target[0] + distance_to_target and target[
+                        1] - distance_to_target <= int(
+                            centerAgent.y) <= target[1] + distance_to_target:
                     # print("agent %s stop because Reach target" %agent.id)
                     num_reach_target += 1
                     centerAgent.moving = False
 
                 # 超出界限
                 if abs(int(centerAgent.x)) > radius or abs(int(
-                        centerAgent.y)) > radius or int(
-                            centerAgent.x) < 0 or int(centerAgent.y) < 0:
+                        centerAgent.y)) > radius:
                     # print("agent %s stop because out of boundary"%agent.id)
                     num_out_of_range += 1
                     centerAgent.moving = False
 
                 # 碰到障碍物：
                 for obstacle in obstacles:
-                    if (obstacle.x - 0.2 <= centerAgent.x <= obstacle.x +
-                            0.2) and (obstacle.y - 0.2 <= centerAgent.y <=
-                                      obstacle.y + 0.2):
+                    if centerAgent.x <= obstacle.x + distance_to_obs and centerAgent.y <= obstacle.y + distance_to_obs:
                         # print("agent %s stop because hit an obstacle" % agent.id)
                         num_hit_obs += 1
                         centerAgent.moving = False

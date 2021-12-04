@@ -32,3 +32,11 @@ state_space_dim = 2
 action_space_dim = 2
 # 设定速度的最大值
 action_max = 1
+
+distance_to_obs = 0.2  # 如果智能体到障碍物的距离小于这个值，则判定其碰到障碍
+distance_to_target = 2  # 如果智能体到目标地点的距离小于这个值，则判定到达目标地点
+view_agent = 5  # 智能体的视野
+obstacle_penalty = -50
+dead_penalty = -1000
+
+epilson = 1 / 3
