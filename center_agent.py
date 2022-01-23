@@ -6,8 +6,8 @@ import math
 
 class CenterAgent(Agent):
     __slots__ = [
-        "id", "x", "y", "group_id", "action", "obstacle_set", "average_action",
-        "agents_list", "average_action_num", "moving"
+        "id", "x", "y", "group_id", "action", "obstacle_set", "average_action", "agents_list", "average_action_num",
+        "moving"
     ]
 
     def __init__(self,

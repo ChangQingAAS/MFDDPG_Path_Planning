@@ -1,9 +1,12 @@
 import torch
+import sys
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
 from .config import *
+sys.path.append("..")
+from etc import epsilon, ALGO_PATH
 
 
 # 扇入变量初始化，可用于初始化权重参数
@@ -36,7 +39,15 @@ class Critic(nn.Module):
         self.fc2.weight.data = fanin_init(self.fc2.weight.data.size())
 
         self.fc3 = nn.Linear(128, 1)
-        self.fc3.weight.data.uniform_(-EPS, EPS)
+        self.fc3.weight.data = fanin_init(self.fc3.weight.data.size())
+
+        self.init_write()
+
+    def init_write(self):
+        with open("%s/output/value_in_critic.csv" % ALGO_PATH, "w+") as f:
+            f.write("value\n")
+        with open("%s/output/loss_critic.csv" % ALGO_PATH, "w+") as f:
+            f.write("times,loss\n")
 
     # 正向传播
     def forward(self, state, action, mean_action):
@@ -47,18 +58,17 @@ class Critic(nn.Module):
         x = torch.cat((s2, a1, a2), dim=1)
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
-        # print("value in critic is ", x.size())
+        # print("value in critic is", x.shape)
 
         return x
 
 
 class Actor(nn.Module):
     '''策略网络，四层网络'''
-    def __init__(self, state_dim, action_dim, action_lim):
+    def __init__(self, state_dim, action_dim):
         super(Actor, self).__init__()
         self.state_dim = state_dim
         self.action_dim = action_dim
-        self.action_lim = action_lim
 
         # 全连接层
         self.fc1 = nn.Linear(state_dim, 256)
@@ -75,7 +85,14 @@ class Actor(nn.Module):
 
         # 全连接层
         self.fc4 = nn.Linear(64, action_dim)
-        self.fc4.weight.data.uniform_(-EPS, EPS)
+        self.fc4.weight.data = fanin_init(self.fc4.weight.data.size())
+        self.init_write()
+
+    def init_write(self):
+        with open("%s/output/action_in_actor.csv" % ALGO_PATH, "w+") as f:
+            f.write("action[0], action[1]\n")
+        with open("%s/output/loss_actor.csv" % ALGO_PATH, "w+") as f:
+            f.write("times,loss\n")
 
     def forward(self, state):
         '''正向传播'''
@@ -83,6 +100,7 @@ class Actor(nn.Module):
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
         action = torch.tanh(self.fc4(x))
-        action = action * self.action_lim
-        # print("action in actor is ", action.size())
+        # print("action in actor is ", action.shape)
+        # with open("%s/output/action_inactor.csv" % ALGO_PATH, "w+") as f:
+        #     f.write("times,loss\n")
         return action

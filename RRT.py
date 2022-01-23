@@ -34,8 +34,7 @@ class RRT(object):
         self.max_rand = rand_area[1]
         # ------matter param------------
         # 这个写死的参数不太好定
-        self.expandPis = 1 / 33 * math.sqrt(
-            pow(goal[0] - start[0], 2) + pow(goal[1] - start[1], 2))
+        self.expandPis = 1 / 33 * math.sqrt(pow(goal[0] - start[0], 2) + pow(goal[1] - start[1], 2))
         # 选择终点的概率是0.05,这个参数matter
         self.goalSampleRate = 0.10
         self.EPSILON = 5
@@ -58,8 +57,7 @@ class RRT(object):
                 return node
 
     def get_nearest_list_index(node_list, rnd):
-        d_list = [(node.x - rnd[0])**2 + (node.y - rnd[1])**2
-                  for node in node_list]
+        d_list = [(node.x - rnd[0])**2 + (node.y - rnd[1])**2 for node in node_list]
         min_index = d_list.index(min(d_list))
         return min_index
 
@@ -78,8 +76,7 @@ class RRT(object):
         return False
 
     def distance(self, p1, p2):
-        return math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) *
-                         (p1.y - p2.y))
+        return math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y))
 
     def step_from_to(self, p, rnd, index):
         if self.distance(p, rnd) < self.expandPis:
@@ -112,8 +109,7 @@ class RRT(object):
                         parentNode = self.nodeList[0]
                         for index, item in enumerate(self.nodeList):
                             # print(index)
-                            if self.distance(item, rnd) <= self.distance(
-                                    parentNode, self.end):
+                            if self.distance(item, rnd) <= self.distance(parentNode, self.end):
                                 new_node = self.step_from_to(item, rnd, index)
                                 if self.is_collision(new_node) == False:
                                     parentNode = item
@@ -163,8 +159,7 @@ class RRT(object):
             plt.plot(rnd[0], rnd[1], "^g")
         for node in self.nodeList:
             if node.parent is not None:
-                plt.plot([node.x, self.nodeList[node.parent].x],
-                         [node.y, self.nodeList[node.parent].y], "-g")
+                plt.plot([node.x, self.nodeList[node.parent].x], [node.y, self.nodeList[node.parent].y], "-g")
 
         for (ox, oy, size) in self.obstacleList:
             # plt.plot(ox, oy, "sk", ms=1 * size)  # 障碍物大小* 10
@@ -184,8 +179,7 @@ class RRT(object):
 
         for node in self.nodeList:
             if node.parent is not None:
-                plt.plot([node.x, self.nodeList[node.parent].x],
-                         [node.y, self.nodeList[node.parent].y], "-g")
+                plt.plot([node.x, self.nodeList[node.parent].x], [node.y, self.nodeList[node.parent].y], "-g")
 
         for (ox, oy, size) in self.obstacleList:
             plt.plot(ox, oy, color='#000000', marker="1")
@@ -206,10 +200,7 @@ def main():
         obstacle_list.append((item.x, item.y, 1))
 
     # Set Initial parameters
-    rrt = RRT(start=[-348, -338],
-              goal=[348, 338],
-              rand_area=[-1 * radius, radius],
-              obstacle_list=obstacle_list)
+    rrt = RRT(start=[-38, -338], goal=[348, 338], rand_area=[-1 * radius, radius], obstacle_list=obstacle_list)
     rrt.planning()
     path = rrt.find_path()
     print("path里的点的数量是： ", len(path))

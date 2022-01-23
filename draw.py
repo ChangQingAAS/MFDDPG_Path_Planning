@@ -17,13 +17,13 @@ def show_cluster_analysis_results(agents, cluster_center_trace, name):
             color = color_list[agent.group_id]
         pylab.plot(agent.x, agent.y, color)
     for single_trace in cluster_center_trace:
-        pylab.plot([center.x for center in single_trace],
-                   [center.y for center in single_trace], 'k')
+        pylab.plot([center.x for center in single_trace], [center.y for center in single_trace], 'k')
+    pylab.savefig("./vis/init.png")
     pylab.show()
 
 
-def show(agents, CenterAgents, obstacles, name):
-    color_list = ['.g', '.b', '.c', '.m', '.y','.r']
+def save_pic(agents, CenterAgents, obstacles, target, name):
+    color_list = ['.g', '.b', '.c', '.m', '.y', '.r']
 
     pylab.figure(figsize=(9, 9), dpi=100)
 
@@ -47,7 +47,7 @@ def show(agents, CenterAgents, obstacles, name):
 
     #  簇中心
     for center_agent in CenterAgents:
-        center_color_list = ['g', 'b', 'c', 'm', 'y','r']
+        center_color_list = ['g', 'b', 'c', 'm', 'y', 'r']
         color = center_color_list[center_agent.group_id]
         pylab.plot(
             center_agent.x,
@@ -56,15 +56,21 @@ def show(agents, CenterAgents, obstacles, name):
             marker="D",
         )
 
+    # 目标点
+    pylab.plot(
+        target[0],
+        target[1],
+        color="#FFD700",
+        marker="p",
+    )
     pylab.savefig(name)
-    # pylab.show()
 
 
 def draw_gif(ax, agents, CenterAgents, obstacles, title):
     ax.cla()  # 清除键
     ax.set_title(title, fontsize=12, color='r')
     # 画点
-    color_list = ['.g', '.b', '.c', '.m', '.y','.r']
+    color_list = ['.g', '.b', '.c', '.m', '.y', '.r']
     # 黑色为障碍物
     for obstacle in obstacles:
         ax.plot(
@@ -73,7 +79,7 @@ def draw_gif(ax, agents, CenterAgents, obstacles, title):
             color='#000000',
             marker="1",
         )
-        
+
     # 彩色的为agent
     for agent in agents:
         color = ''
@@ -85,7 +91,7 @@ def draw_gif(ax, agents, CenterAgents, obstacles, title):
 
     #  簇中心
     for center_agent in CenterAgents:
-        center_color_list = ['g', 'b', 'c', 'm', 'y','r']
+        center_color_list = ['g', 'b', 'c', 'm', 'y', 'r']
         color = center_color_list[center_agent.group_id]
         pylab.plot(
             center_agent.x,
@@ -94,5 +100,4 @@ def draw_gif(ax, agents, CenterAgents, obstacles, title):
             marker="D",
         )
 
-    # ax.legend()
     plt.pause(0.1)
