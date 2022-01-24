@@ -5,5 +5,8 @@
             "--style",
             "{column_limit: 119}"
         ],
+    },
+    "code-runner.executorMap": {
+        "python": "python3 -u"
     }
 }

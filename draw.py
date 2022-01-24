@@ -66,7 +66,7 @@ def save_pic(agents, CenterAgents, obstacles, target, name):
     pylab.savefig(name)
 
 
-def draw_gif(ax, agents, CenterAgents, obstacles, title):
+def draw_gif(ax, agents, CenterAgents, obstacles, target, title):
     ax.cla()  # 清除键
     ax.set_title(title, fontsize=12, color='r')
     # 画点
@@ -100,4 +100,53 @@ def draw_gif(ax, agents, CenterAgents, obstacles, title):
             marker="D",
         )
 
+    # 目标点
+    pylab.plot(
+        target[0],
+        target[1],
+        color="#FFD700",
+        marker="p",
+    )
     plt.pause(0.1)
+
+
+def get_im(agents, CenterAgents, obstacles, target, title):
+    # 目标点
+    im = pylab.plot(
+        target[0],
+        target[1],
+        color="#FFD700",
+        marker="p",
+    )
+    #  画点
+    color_list = ['.g', '.b', '.c', '.m', '.y', '.r']
+    # 黑色为障碍物
+    for obstacle in obstacles:
+        im.extend(pylab.plot(
+            obstacle.x,
+            obstacle.y,
+            color='#000000',
+            marker="1",
+        ))
+
+    # 彩色的为agent
+    for agent in agents:
+        color = ''
+        if agent.group_id >= len(color_list):
+            color = color_list[-1]
+        else:
+            color = color_list[agent.group_id]
+        im.extend(pylab.plot(agent.x, agent.y, color))
+
+    #  簇中心
+    for center_agent in CenterAgents:
+        center_color_list = ['g', 'b', 'c', 'm', 'y', 'r']
+        color = center_color_list[center_agent.group_id]
+        im.extend(pylab.plot(
+            center_agent.x,
+            center_agent.y,
+            color=color,
+            marker="D",
+        ))
+
+    return im

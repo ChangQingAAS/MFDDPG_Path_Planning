@@ -4,7 +4,6 @@ from math import sqrt
 
 from obstacle import Obstacle
 from agent import Agent
-from center_agent import CenterAgent
 from etc import *
 
 
@@ -57,8 +56,7 @@ def get_action_from_all_clusters(agent, CenterAgents, action_from_algo):
 def get_obstacles_within_observation(agent, CenterAgent, obstacles):
     for obstacle in obstacles:
         # 局部感知： 智能体只能看到部分
-        if int(agent.x) - view_agent <= obstacle.x <= int(agent.x) + view_agent and int(
-                agent.y) - view_agent <= obstacle.y <= int(agent.y) + view_agent:
+        if agent.x - view_agent <= obstacle.x <= agent.x + view_agent and agent.y - view_agent <= obstacle.y <= agent.y + view_agent:
             # print("info: \n        agent_%s find obstacle_%s " % (agent.id, obstacle.id))
             CenterAgent.obstacle_set.add(obstacle)
 
@@ -68,7 +66,7 @@ def is_hit_obstacle(agent, action, CenterAgents):
     next_x = agent.x + action[0]
     next_y = agent.y + action[1]
     for item in CenterAgents[agent.group_id].obstacle_set:
-        if next_x - distance_to_obs <= item.x <= next_x + distance_to_obs and next_y - distance_to_obs <= item.y <= next_y + distance_to_obs:
+        if next_x - distance_to_obs <= item.x <= next_x + distance_to_obs or next_y - distance_to_obs <= item.y <= next_y + distance_to_obs:
             return True
 
     return False
@@ -100,8 +98,8 @@ def generate_Agents(num_agents, radius):
         # angle = random.random() * 2.0 * math.pi  # 这里有一个超参可以改变点的聚集状况
         # agent.x = r * math.cos(angle)
         # agent.y = r * math.sin(angle)
-        agent.x = int(random.uniform(-1, 1) * radius)
-        agent.y = int(random.uniform(-1, 1) * radius)
+        agent.x = random.uniform(-1, 1) * radius
+        agent.y = random.uniform(-1, 1) * radius
         agent.id = id
         id += 1
     return agents
@@ -112,8 +110,8 @@ def generate_Obstacles(num_agents, radius):
     obstacles = [Obstacle() for _ in range(num_agents)]
     id = 1
     for obstacle in obstacles:
-        obstacle.x = int(random.uniform(-1, 1) * radius)
-        obstacle.y = int(random.uniform(-1, 1) * radius)
+        obstacle.x = random.uniform(-1, 1) * radius
+        obstacle.y = random.uniform(-1, 1) * radius
         obstacle.id = id
         id += 1
     return obstacles
@@ -134,13 +132,12 @@ def get_all_obstacles(Obstacles):
 
 
 #
-def is_changed(agents, prev_agents):
-    for item in agents:
-        for prev_item in prev_agents:
-            if prev_item.id == item.id:
-                flag = (prev_item.x == item.x) and (prev_item.y == item.y)
-                print(prev_item.id, ": ", flag)
-
+# def is_changed(agents, prev_agents):
+#     for item in agents:
+#         for prev_item in prev_agents:
+#             if prev_item.id == item.id:
+#                 flag = (prev_item.x == item.x) and (prev_item.y == item.y)
+#                 print(prev_item.id, ": ", flag)
 
 # def get_mean_action_from_neigh(agents, id):
 #     mean_action = [0, 0]

@@ -12,13 +12,15 @@ from . import update
 from . import network
 from .config import *
 from . import OUnoise
+
 sys.path.append("..")
-from etc import epsilon, ALGO_PATH
+from etc import ALGO_PATH
 from . import buffer
 
 
 class Trainer:
     '''训练器'''
+
     def __init__(self, state_dim, action_dim, dev, epoch=0, model_save_path=None):
         self.state_dim = state_dim
         self.action_dim = action_dim
@@ -63,12 +65,12 @@ class Trainer:
         state = [x, y]
         state = np.float32(state)  # 强制转化为浮点类型
 
-        # epilson的动作随机生成，其他的动作由模型生成
+        # epsilon的动作随机生成，其他的动作由模型生成
         number = random.randint(0, 1)
-        if number < epsilon == 0:
+        if number < EPSILON:
             action = self.get_exploration_action(state)  # 通过模型来生成动作，利用
         else:
-            action = self.get_exploitation_action(state)  # 随机生成动作。
+            action = self.get_exploitation_action(state)  # 随机生成动作
         with open("%s/output/action.csv" % ALGO_PATH, "a+") as f:
             # f.write("action from mfddpg is [%f,%f]" % (action[0], action[1]))
             f.write("%f,%f\n" % (action[0], action[1]))

@@ -37,8 +37,7 @@ def kMeansPlusPlus(agents, cluster_center_group):
     for index in range(1, len(cluster_center_group)):
         for i, agent in enumerate(agents):
             # 智能体i到(前index个中心点中)最近中心点的距离
-            distance_group[i] = get_nearest_center(
-                agent, cluster_center_group[:index])[1]
+            distance_group[i] = get_nearest_center(agent, cluster_center_group[:index])[1]
             sum += distance_group[i]
         sum *= random.random()
         for i, distance in enumerate(distance_group):
@@ -92,8 +91,7 @@ def kMeans(agents, cluster_center_number):
     # 此时已经基于一组离散中心点，完成分类了，即第一次正式分类，但是此时中心点并不是在群体中心，只是满足离散的条件
 
     # 下面开始进入不断优化地分类
-    cluster_center_trace = [[cluster_center]
-                            for cluster_center in cluster_center_group]
+    cluster_center_trace = [[cluster_center] for cluster_center in cluster_center_group]
     tolerable_error, current_error = 5.0, FLOAT_MAX
     count = 0
     while current_error >= tolerable_error:
@@ -110,18 +108,23 @@ def kMeans(agents, cluster_center_number):
         current_error = 0.0
         for index, singleTrace in enumerate(cluster_center_trace):
             singleTrace.append(current_center_group[index])
-            current_error += get_distance_between_two_points(
-                singleTrace[-1], singleTrace[-2])
+            current_error += get_distance_between_two_points(singleTrace[-1], singleTrace[-2])
             cluster_center_group[index].x = current_center_group[index].x
             cluster_center_group[index].y = current_center_group[index].y
 
         for agent in agents:
             agent.group_id = get_nearest_center(agent, cluster_center_group)[0]
 
-    CenterAgents = update_cluster_center_to_CenterAgents(
-        cluster_center_group, agents)
+    CenterAgents = update_cluster_center_to_CenterAgents(cluster_center_group, agents)
 
     return CenterAgents, cluster_center_trace
+
+
+def get_all():
+    agents = generate_Agents(num_agents, radius)
+    obstacles = generate_Obstacles(num_obstacles, radius)
+    CenterAgents, cluster_center_trace = kMeans(agents, num_cluster_center)
+    return agents, CenterAgents, obstacles
 
 
 def main():
@@ -134,13 +137,6 @@ def main():
     obstacles = generate_Obstacles(num_obstacles, radius)
     CenterAgents, cluster_center_trace = kMeans(agents, num_cluster_center)
     show(agents, CenterAgents, obstacles, "./show_result.png")
-
-
-def get_all():
-    agents = generate_Agents(num_agents, radius)
-    obstacles = generate_Obstacles(num_obstacles, radius)
-    CenterAgents, cluster_center_trace = kMeans(agents, num_cluster_center)
-    return agents, CenterAgents, obstacles
 
 
 if __name__ == '__main__':

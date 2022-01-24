@@ -19,7 +19,7 @@ class file():
         # print("输出路径", self.OUTPUT_PATH)
 
         # 写入models的路径
-        self.MODELS_PATH = "%s/Models/" % self.OUTPUT_PATH
+        self.MODELS_PATH = "%s/models/" % self.OUTPUT_PATH
 
         # 指定写入回合数的文件路径
         self.epoch_file_path = "%s/epoch.txt" % self.OUTPUT_PATH

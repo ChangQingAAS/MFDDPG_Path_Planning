@@ -6,7 +6,7 @@ import numpy as np
 
 from .config import *
 sys.path.append("..")
-from etc import epsilon, ALGO_PATH
+from etc import  ALGO_PATH
 
 
 # 扇入变量初始化，可用于初始化权重参数
