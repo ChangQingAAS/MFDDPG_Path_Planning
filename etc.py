@@ -1,16 +1,16 @@
 import torch
 import os
 """在地图上随机放置这些物体"""
-num_cluster_center = 6
-num_agents = 60
-num_obstacles = 20
+num_cluster_center = 3
+num_agents = 30
+num_obstacles = 10
 # num_neighbor = 4
 
 radius = 36  # 地图大小
 target = (0, 0)  # 目标位置
 
 num_epochs = 50  # 一共训练多少回合
-max_step = radius * 10 + 1  # 每回合一共做多少次决策
+max_step = radius * 5 + 1  # 每回合一共做多少次决策
 
 # eta = 0.5
 # beta = 0.2
