@@ -110,24 +110,14 @@ def draw_gif(ax, agents, CenterAgents, obstacles, target, title):
     plt.pause(0.1)
 
 
-def get_im(agents, CenterAgents, obstacles, target, title):
+def get_im(agents, CenterAgents, obstacles, target):
     # 目标点
-    im = pylab.plot(
-        target[0],
-        target[1],
-        color="#FFD700",
-        marker="p",
-    )
+    im = pylab.plot(target[0], target[1], color="#FFD700", marker='s', markersize=20)
     #  画点
     color_list = ['.g', '.b', '.c', '.m', '.y', '.r']
     # 黑色为障碍物
     for obstacle in obstacles:
-        im.extend(pylab.plot(
-            obstacle.x,
-            obstacle.y,
-            color='#000000',
-            marker="1",
-        ))
+        im.extend(pylab.plot(obstacle.x, obstacle.y, 'sk', ms=15))
 
     # 彩色的为agent
     for agent in agents:

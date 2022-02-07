@@ -35,7 +35,7 @@ class Critic(nn.Module):
         self.fca2 = nn.Linear(action_dim, 128)
         self.fca2.weight.data = fanin_init(self.fca2.weight.data.size())
 
-        self.fc2 = nn.Linear(384, 128)
+        self.fc2 = nn.Linear(256, 128)
         self.fc2.weight.data = fanin_init(self.fc2.weight.data.size())
 
         self.fc3 = nn.Linear(128, 1)
@@ -50,12 +50,11 @@ class Critic(nn.Module):
             f.write("times,loss\n")
 
     # 正向传播
-    def forward(self, state, action, mean_action):
+    def forward(self, state, mean_action ):
         s1 = F.relu(self.fcs1(state))
         s2 = F.relu(self.fcs2(s1))
-        a1 = F.relu(self.fca1(action))
-        a2 = F.relu(self.fca2(mean_action))
-        x = torch.cat((s2, a1, a2), dim=1)
+        a1 = F.relu(self.fca1(mean_action))
+        x = torch.cat((s2, a1), dim=1)
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         # print("value in critic is", x.shape)

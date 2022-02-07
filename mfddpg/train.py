@@ -66,42 +66,39 @@ class Trainer:
         state = np.float32(state)  # 强制转化为浮点类型
 
         # epsilon的动作随机生成，其他的动作由模型生成
-        number = random.randint(0, 1)
+        number = random.random()
         if number < EPSILON:
-            action = self.get_exploration_action(state)  # 通过模型来生成动作，利用
+            action = self.get_exploration_action(state)  # 随机生成动作
         else:
-            action = self.get_exploitation_action(state)  # 随机生成动作
+            action = self.get_exploitation_action(state)  # 通过模型来生成动作，利用
         with open("%s/output/action.csv" % ALGO_PATH, "a+") as f:
-            # f.write("action from mfddpg is [%f,%f]" % (action[0], action[1]))
             f.write("%f,%f\n" % (action[0], action[1]))
-        # print("action from mfddpg is ", action)
         return action
 
     # 根据动作执行结果，训练一次智能体
-    def train_(self, train_step, state_last, action_last, reward_now, state_new, cur_step, mean_action):
+    def train_(self, train_step, state_last, mean_action, reward_now, state_new, cur_step):
         # 添加最新经验，并优化训练一把，再做决策
-        self.ram.add(state_last, action_last, reward_now, state_new, mean_action)
+        self.ram.add(state_last, mean_action, reward_now, state_new)
         self.optimize(cur_step)
         # print("step in mfddpg is ", cur_step)
         train_step += 1
 
     def optimize(self, step):
         '''优化'''
-        s1, a1, r1, s2, a_ = self.ram.sample(BATCH_SIZE)
+        s1, a1, r1, s2 = self.ram.sample(BATCH_SIZE)
         s1 = Variable(torch.from_numpy(s1).to(self.device))
         a1 = Variable(torch.from_numpy(a1).to(self.device))
         r1 = Variable(torch.from_numpy(r1).to(self.device))
         s2 = Variable(torch.from_numpy(s2).to(self.device))
-        a_ = Variable(torch.from_numpy(a_).to(self.device))
 
         a2 = self.target_actor.forward(s2).detach()  # 根据S2得出的下一个动作a2
         # print("a2 is ", a2.size())
-        next_val = torch.squeeze(self.target_critic.forward(s2, a2, a_).detach())  # 根据s2和a2得出的目标值
+        next_val = torch.squeeze(self.target_critic.forward(s2, a2).detach())  # 根据s2和a2得出的目标值
         # print("next_val is ", next_val.size())
         y_expectd = r1 + GAMMA * next_val  # 目标回报值
         # print("y_expected is ", y_expectd.size())
 
-        y_predicted = torch.squeeze(self.critic.forward(s1, a1, a_))  # 主价值网络得到的回报值
+        y_predicted = torch.squeeze(self.critic.forward(s1, a1))  # 主价值网络得到的回报值
         # print("y_predicted is ", y_predicted.size())
         loss_critic = F.smooth_l1_loss(y_predicted, y_expectd)  # 价值损失（回报值的损失）
         self.critic_optimizer.zero_grad()  # 优化器参数置为零
@@ -111,7 +108,7 @@ class Trainer:
         self.critic_optimizer.step()  # 修改价值网络参数
 
         pred_a1 = self.actor.forward(s1)
-        loss_actor = -1 * torch.sum(self.critic.forward(s1, pred_a1, a_))  # 决策损失（回报值的损失）
+        loss_actor = -1 * torch.sum(self.critic.forward(s1, pred_a1))  # 决策损失（回报值的损失）
         self.actor_optimizer.zero_grad()
         with open("%s/output/loss_actor.csv" % ALGO_PATH, "a+") as f:
             f.write("%s,%s\n" % (step, loss_actor.item()))  # 将损失值保存到文件中

@@ -12,7 +12,7 @@ class Agent:
         self.y = y
         self.group_id = group_id
         self.action = action  # x,y两个方向前进的数值
-        self.moving = True  # 如果Agent到达目标地点或被杀死，则moving为False
+        self.moving = True  # Agent是否在移动
 
     def take_action(self, action):
         self.x += action[0]

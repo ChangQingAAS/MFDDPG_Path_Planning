@@ -12,6 +12,7 @@ class Node(object):
     """
     RRT Node
     """
+
     def __init__(self, x, y):
         self.x = x
         self.y = y
@@ -19,6 +20,7 @@ class Node(object):
 
 
 class RRT(object):
+
     def __init__(self, start, goal, obstacle_list, rand_area):
         """Setting Parameter
 
@@ -36,7 +38,7 @@ class RRT(object):
         # 这个写死的参数不太好定
         self.expandPis = 1 / 33 * math.sqrt(pow(goal[0] - start[0], 2) + pow(goal[1] - start[1], 2))
         # 选择终点的概率是0.05,这个参数matter
-        self.goalSampleRate = 0.10
+        self.goalSampleRate = 0.15
         self.EPSILON = 5
         self.NUMNODES = 10000
         # ----------------------------
@@ -138,7 +140,7 @@ class RRT(object):
                     #     print("点_list的大小是： ", len(self.nodeList))
 
                 else:
-                    print("Ran out of nodes... :(")
+                    print("Ran out of nodes...")
                     return
 
     def find_path(self):
@@ -163,7 +165,7 @@ class RRT(object):
 
         for (ox, oy, size) in self.obstacleList:
             # plt.plot(ox, oy, "sk", ms=1 * size)  # 障碍物大小* 10
-            plt.plot(ox, oy, color='#000000', marker="1")
+            plt.plot(ox, oy, color='#000000', ms=10 * size)
 
         plt.plot(self.start.x, self.start.y, "^r")
         plt.plot(self.end.x, self.end.y, "^b")
@@ -182,7 +184,7 @@ class RRT(object):
                 plt.plot([node.x, self.nodeList[node.parent].x], [node.y, self.nodeList[node.parent].y], "-g")
 
         for (ox, oy, size) in self.obstacleList:
-            plt.plot(ox, oy, color='#000000', marker="1")
+            plt.plot(ox, oy, 'sk', ms=10 * size)
 
         plt.plot(self.start.x, self.start.y, "^r")
         plt.plot(self.end.x, self.end.y, "^b")
@@ -191,20 +193,21 @@ class RRT(object):
         plt.plot([data[0] for data in path], [data[1] for data in path], '-r')
         # plt.grid(True)
         plt.show()
+        plt.savefig("RRT.png")
 
 
 def main():
     obstacles = generate_Obstacles(num_obstacles, radius)
     obstacle_list = []
     for item in obstacles:
-        obstacle_list.append((item.x, item.y, 1))
+        obstacle_list.append((item.x, item.y, 3))
 
     # Set Initial parameters
-    rrt = RRT(start=[-38, -338], goal=[348, 338], rand_area=[-1 * radius, radius], obstacle_list=obstacle_list)
+    rrt = RRT(start=[-3, -8], goal=[4, 8], rand_area=[-1 * radius, radius], obstacle_list=obstacle_list)
     rrt.planning()
     path = rrt.find_path()
     print("path里的点的数量是： ", len(path))
-    print(path)
+    # print(path)
     print("you should move to ", path[-2])
 
     # Draw final path
@@ -223,16 +226,19 @@ def get_action_by_RTT(start_point, goal_point, obstacles):
               goal=[goal_point[0], goal_point[1]],
               rand_area=[-1 * radius, radius],
               obstacle_list=obstacle_list)
-    rrt.planning()
-    path = rrt.find_path()
+    try:
+        rrt.planning()
+        path = rrt.find_path()
 
-    dx = path[-2][0] - start_point.x
-    dy = path[-2][1] - start_point.y
-    l = math.sqrt(dx * dx + dy * dy)
-    action_x = dx / l
-    action_y = dy / l
+        dx = path[-2][0] - start_point.x
+        dy = path[-2][1] - start_point.y
+        l = math.sqrt(dx * dx + dy * dy)
+        action_x = dx / l
+        action_y = dy / l
 
-    return [action_x, action_y]
+        return [action_x, action_y]
+    except:
+        return [0,0]
 
 
 if __name__ == '__main__':
