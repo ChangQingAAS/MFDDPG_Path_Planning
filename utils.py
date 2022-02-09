@@ -12,7 +12,7 @@ def get_reward(agent, leader):
     obstacle_reward = 0
     live_reward = 0
     # 接近目标的奖励,这里使用的是欧式距离
-    distance_reward = -3 * sqrt(pow((agent.x - target[0]), 2) + pow((agent.y - target[1]), 2))
+    distance_reward = -2* sqrt(pow((agent.x - target[0]), 2) + pow((agent.y - target[1]), 2))
 
     # 障碍物的惩罚
     for item in leader.obstacle_set:

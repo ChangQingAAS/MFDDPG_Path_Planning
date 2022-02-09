@@ -120,6 +120,7 @@ for epoch in range(start_epoch, num_epochs):
                         if agent.x - distance_to_obs <= obstacle.x <= agent.x + distance_to_obs or agent.y - distance_to_obs <= obstacle.y <= agent.y + distance_to_obs:
                             # print("agent:%s, [%s, %s]; obs: [%s,%s]" % (agent.id, agent.x, agent.y, obstacle.x, obstacle.y))
                             print("agent_%s stop because hit an obstacle" % agent.id)
+                            leader.obstacle_set.add(obstacle)
                             num_hit_obs += 1
                             agent.moving = False
                             break
@@ -164,6 +165,7 @@ for epoch in range(start_epoch, num_epochs):
                     for obstacle in obstacles:
                         if centerAgent.x - distance_to_obs <= obstacle.x <= centerAgent.x + distance_to_obs or centerAgent.y - distance_to_obs <= obstacle.y <= centerAgent.y + distance_to_obs:
                             print("centeragent_%s stop because hit an obstacle" % centerAgent.id)
+                            centerAgent.obstacle_set.add(obstacle)
                             num_hit_obs += 1
                             centerAgent.moving = False
                             break

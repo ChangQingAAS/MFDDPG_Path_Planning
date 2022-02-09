@@ -28,11 +28,10 @@ def get_data(path):
 def draw(epoch, num_reach_target, num_hit_obs, num_out_of_range, num_moving, color_list, pic_name):
     plt.plot(epoch, num_reach_target, color=color_list[7])
     plt.plot(epoch, num_hit_obs, color=color_list[4])
-    plt.plot(epoch, num_out_of_range, color=color_list[0])
+    # plt.plot(epoch, num_out_of_range, color=color_list[0])
     plt.plot(epoch, num_moving, color=color_list[3])
 
-    plt.legend(['num_reach_target', 'num_hit_obs', 'num_out_of_range', 'num_moving'], loc='lower right',
-               fontsize=10)  # 图例
+    plt.legend(['num_reach_target', 'num_hit_obs', 'num_moving'], loc='lower right', fontsize=10)  # 图例
     plt.ylabel('number', fontsize=10)
     plt.xlabel('episodes', fontsize=10)
     plt.title('result', fontsize=10)
